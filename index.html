@@ -266,6 +266,86 @@
       transform: scale(1.05);
     }
 
+    /* Dynamic MIDI Note Editor Form (Accordial Collapse Style for Smartphone Layout) */
+    .midi-note-config {
+      margin-top: 0.8rem;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      background: rgba(0, 0, 0, 0.18);
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    .config-toggle-btn {
+      padding: 0.65rem 0.9rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.02);
+      transition: background 0.2s;
+      letter-spacing: 0.5px;
+      color: var(--text-main);
+    }
+    .config-toggle-btn:active {
+      background: rgba(255, 255, 255, 0.06);
+    }
+    .config-toggle-btn i {
+      transition: transform 0.3s;
+    }
+    .config-panel {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .config-panel.expanded {
+      max-height: 380px; /* Generous height for expanded states */
+    }
+    .config-grid {
+      padding: 0.8rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.6rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.03);
+    }
+    .config-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      background: rgba(0, 0, 0, 0.12);
+      padding: 0.5rem;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.01);
+    }
+    .config-item label {
+      font-size: 0.6rem;
+      color: var(--text-sub);
+      font-weight: 800;
+      letter-spacing: 0.5px;
+    }
+    .note-input {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      color: #ffffff;
+      padding: 0.4rem;
+      font-family: var(--font-family);
+      font-size: 0.85rem;
+      font-weight: 800;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.2s;
+      -moz-appearance: textfield; /* Remove spinner firefox */
+    }
+    .note-input::-webkit-outer-spin-button,
+    .note-input::-webkit-inner-spin-button {
+      -webkit-appearance: none; /* Remove spinner chrome */
+      margin: 0;
+    }
+    .left-hand .note-input:focus { border-color: var(--color-left); }
+    .right-hand .note-input:focus { border-color: var(--color-right); }
+
     /* Param Slider Monitor inside hand card */
     .sensor-monitor {
       margin-top: 0.8rem;
@@ -591,9 +671,9 @@
     .emulator-hand-panel.right .emulator-hand-title { color: var(--color-right); }
     
     .emulator-buttons {
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.3rem;
     }
     .emulator-btn {
       background: rgba(255, 255, 255, 0.05);
@@ -601,7 +681,7 @@
       border-radius: 8px;
       color: white;
       padding: 0.4rem;
-      font-size: 0.7rem;
+      font-size: 0.65rem;
       font-weight: 600;
       cursor: pointer;
       font-family: var(--font-family);
@@ -683,6 +763,42 @@
         <div id="gesture-Left" class="gesture-name">Ready</div>
       </div>
 
+      <!-- Dynamic MIDI Note Mapping Settings -->
+      <div class="midi-note-config">
+        <div class="config-toggle-btn" onclick="toggleConfig('Left')">
+          <span><i class="fa-solid fa-music"></i> Left MIDI Notes Map</span>
+          <i id="config-icon-Left" class="fa-solid fa-chevron-down"></i>
+        </div>
+        <div id="config-panel-Left" class="config-panel">
+          <div class="config-grid">
+            <div class="config-item">
+              <label>ATTACK</label>
+              <input type="number" id="note-Left-ATTACK" min="0" max="127" class="note-input" onchange="saveNote('Left', 'ATTACK')">
+            </div>
+            <div class="config-item">
+              <label>THRUST</label>
+              <input type="number" id="note-Left-THRUST" min="0" max="127" class="note-input" onchange="saveNote('Left', 'THRUST')">
+            </div>
+            <div class="config-item">
+              <label>SHAKE</label>
+              <input type="number" id="note-Left-SHAKE" min="0" max="127" class="note-input" onchange="saveNote('Left', 'SHAKE')">
+            </div>
+            <div class="config-item">
+              <label>SLASH</label>
+              <input type="number" id="note-Left-SLASH" min="0" max="127" class="note-input" onchange="saveNote('Left', 'SLASH')">
+            </div>
+            <div class="config-item">
+              <label>TWIST</label>
+              <input type="number" id="note-Left-TWIST" min="0" max="127" class="note-input" onchange="saveNote('Left', 'TWIST')">
+            </div>
+            <div class="config-item">
+              <label>U-SHAPE</label>
+              <input type="number" id="note-Left-U-SHAPE" min="0" max="127" class="note-input" onchange="saveNote('Left', 'U-SHAPE')">
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Raw Tilt parameters mapped to MIDI CC Visualizer -->
       <div class="sensor-monitor">
         <div class="sensor-row">
@@ -723,6 +839,42 @@
       <div class="gesture-display">
         <div class="gesture-label">Detected Gesture</div>
         <div id="gesture-Right" class="gesture-name">Ready</div>
+      </div>
+
+      <!-- Dynamic MIDI Note Mapping Settings -->
+      <div class="midi-note-config">
+        <div class="config-toggle-btn" onclick="toggleConfig('Right')">
+          <span><i class="fa-solid fa-music"></i> Right MIDI Notes Map</span>
+          <i id="config-icon-Right" class="fa-solid fa-chevron-down"></i>
+        </div>
+        <div id="config-panel-Right" class="config-panel">
+          <div class="config-grid">
+            <div class="config-item">
+              <label>ATTACK</label>
+              <input type="number" id="note-Right-ATTACK" min="0" max="127" class="note-input" onchange="saveNote('Right', 'ATTACK')">
+            </div>
+            <div class="config-item">
+              <label>THRUST</label>
+              <input type="number" id="note-Right-THRUST" min="0" max="127" class="note-input" onchange="saveNote('Right', 'THRUST')">
+            </div>
+            <div class="config-item">
+              <label>SHAKE</label>
+              <input type="number" id="note-Right-SHAKE" min="0" max="127" class="note-input" onchange="saveNote('Right', 'SHAKE')">
+            </div>
+            <div class="config-item">
+              <label>SLASH</label>
+              <input type="number" id="note-Right-SLASH" min="0" max="127" class="note-input" onchange="saveNote('Right', 'SLASH')">
+            </div>
+            <div class="config-item">
+              <label>TWIST</label>
+              <input type="number" id="note-Right-TWIST" min="0" max="127" class="note-input" onchange="saveNote('Right', 'TWIST')">
+            </div>
+            <div class="config-item">
+              <label>U-SHAPE</label>
+              <input type="number" id="note-Right-U-SHAPE" min="0" max="127" class="note-input" onchange="saveNote('Right', 'U-SHAPE')">
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Raw Tilt parameters mapped to MIDI CC Visualizer -->
@@ -805,7 +957,10 @@
           <div class="emulator-hand-title">Left Emulator</div>
           <div class="emulator-buttons">
             <button class="emulator-btn" onclick="emulateGesture('Left', 'ATTACK')">ATTACK</button>
+            <button class="emulator-btn" onclick="emulateGesture('Left', 'THRUST')">THRUST</button>
             <button class="emulator-btn" onclick="emulateGesture('Left', 'SHAKE')">SHAKE</button>
+            <button class="emulator-btn" onclick="emulateGesture('Left', 'SLASH')">SLASH</button>
+            <button class="emulator-btn" onclick="emulateGesture('Left', 'TWIST')">TWIST</button>
             <button class="emulator-btn" onclick="emulateGesture('Left', 'U-SHAPE')">U-SHAPE</button>
           </div>
           <div class="emulator-slider-group">
@@ -824,7 +979,10 @@
           <div class="emulator-buttons">
             <button class="emulator-btn" onclick="emulateGesture('Right', 'ATTACK')">ATTACK</button>
             <button class="emulator-btn" onclick="emulateGesture('Right', 'THRUST')">THRUST</button>
+            <button class="emulator-btn" onclick="emulateGesture('Right', 'SHAKE')">SHAKE</button>
             <button class="emulator-btn" onclick="emulateGesture('Right', 'SLASH')">SLASH</button>
+            <button class="emulator-btn" onclick="emulateGesture('Right', 'TWIST')">TWIST</button>
+            <button class="emulator-btn" onclick="emulateGesture('Right', 'U-SHAPE')">U-SHAPE</button>
           </div>
           <div class="emulator-slider-group">
             <div class="emulator-slider-label"><span>Roll</span><span id="emul-val-Right-roll">0°</span></div>
@@ -854,7 +1012,8 @@
     const CONFIG = {
       defaultIP: "192.168.11.3:8080",
       midiChannel: 1, // Channels 1-16 (mapped internally to 0-15)
-      // Mappings for Gesture -> MIDI Note numbers (Velocity 127)
+      
+      // Default mappings for Gesture -> MIDI Note numbers (Dynamically editable & saved)
       midiNoteMap: {
         Right: {
           "ATTACK": 60,  // ド (C4)
@@ -941,7 +1100,7 @@
       const edges = new THREE.EdgesGeometry(geometry);
       const lineMaterial = new THREE.LineBasicMaterial({
         color: side === 'Left' ? 0x00d2ff : 0xff3b3b,
-        linewidth: 2 // Note: linewidth > 1 usually not supported by WebGL implementations, but good practice
+        linewidth: 2
       });
       const wireframe = new THREE.LineSegments(edges, lineMaterial);
       cubeMesh.add(wireframe);
@@ -1078,46 +1237,30 @@
       }
     }
 
-    /**
-     * Handles incoming data payload. Supports both structured JSON OSC
-     * and fallback string parse.
-     */
     function handleWSMessage(rawData) {
       try {
         const parsed = JSON.parse(rawData);
-        
-        // Typical OSC message structure: { address: "/m5/Right/gesture", args: ["ATTACK"] }
         if (parsed.address && parsed.args) {
           routeOSCMessage(parsed.address, parsed.args);
         } else {
-          // Direct JSON fields fallback (e.g. { id: 'Right', action: 'ATTACK' })
           handleDirectJSONFallback(parsed);
         }
       } catch (e) {
-        // Fallback: If not JSON, print to log for transparency
-        addLog("System", `Raw Data Received: ${rawData}`, "system");
+        addLog("System", `Raw Data: ${rawData}`, "system");
       }
     }
 
     function routeOSCMessage(address, args) {
-      // 1. Gesture Address Routing
-      // Expected: /m5/Right/gesture -> ["ATTACK"]
       if (address.endsWith("/gesture")) {
         const parts = address.split('/');
-        // parts array: ["", "m5", "Right", "gesture"] or similar
-        const side = parts[2]; // 'Right' or 'Left'
+        const side = parts[2];
         const gestureName = args[0];
-        
         if (side === 'Right' || side === 'Left') {
           handleGestureDetected(side, gestureName);
         }
-      }
-      // 2. Sensor Telemetry Routing
-      // Expected: /m5/Right -> [accX, accY, accZ, gyroX, gyroY, gyroZ]
-      else if (address.startsWith("/m5/")) {
+      } else if (address.startsWith("/m5/")) {
         const parts = address.split('/');
-        const side = parts[2]; // 'Right' or 'Left'
-        
+        const side = parts[2];
         if ((side === 'Right' || side === 'Left') && args.length >= 6) {
           const accX = Number(args[0]);
           const accY = Number(args[1]);
@@ -1125,24 +1268,20 @@
           const gyroX = Number(args[3]);
           const gyroY = Number(args[4]);
           const gyroZ = Number(args[5]);
-          
           handleTelemetry(side, accX, accY, accZ, gyroX, gyroY, gyroZ);
         }
       }
     }
 
     function handleDirectJSONFallback(data) {
-      // Support for alternative Smart Geta style: { id: "Right", status: "connected" }
       if (data.id && data.status) {
         setDeviceStatus(data.id, data.status === "connected");
-      }
-      // { id: "Right", action: "ATTACK" }
-      else if (data.id && data.action) {
+      } else if (data.id && data.action) {
         handleGestureDetected(data.id, data.action);
       }
     }
 
-    // Auto-timeout check for device connection state (Offline if no telemetry in 2 seconds)
+    // Auto-timeout check for device connection state
     setInterval(() => {
       const now = Date.now();
       ["Left", "Right"].forEach(side => {
@@ -1168,7 +1307,7 @@
         badge.classList.remove("connected");
         statusText.textContent = "Offline";
         card.classList.remove("connected");
-        state.lastDataReceived[side] = 0; // reset
+        state.lastDataReceived[side] = 0;
       }
     }
 
@@ -1179,7 +1318,6 @@
       const card = document.getElementById(`card-${side}`);
       const textEl = document.getElementById(`gesture-${side}`);
       
-      // Stop ongoing animation timer for this hand to prevent conflicts
       if (state.activeTimers[side]) {
         clearTimeout(state.activeTimers[side]);
       }
@@ -1187,59 +1325,49 @@
       // 1. Play Premium Synth audio feedback locally
       playAudioBeep(side, gestureName);
 
-      // 2. Trigger Web MIDI Note output
+      // 2. Trigger Web MIDI Note output (takes dynamic value from settings)
       triggerMIDIGesture(side, gestureName);
 
       // 3. UI Flash Animation Setup
-      // Force DOM Reflow to restart animations
       card.classList.remove("flash-active");
       textEl.classList.remove("detected");
       void card.offsetWidth;
 
-      // Add active CSS classes
       card.classList.add("flash-active");
       textEl.classList.add("detected");
       textEl.textContent = gestureName;
 
-      addLog(side, `Detected Gesture: <span class="log-highlight">${gestureName}</span>`, side.toLowerCase());
+      addLog(side, `Detected: <span class="log-highlight">${gestureName}</span>`, side.toLowerCase());
 
-      // 4. Cubic Bezier recovery back to baseline after 0.2s (200ms)
+      // 4. Cubic Bezier recovery back to baseline after 0.2s
       state.activeTimers[side] = setTimeout(() => {
         card.classList.remove("flash-active");
         textEl.classList.remove("detected");
       }, 200);
     }
 
-    /**
-     * Real-time sensor routing
-     */
     function handleTelemetry(side, accX, accY, accZ, gyroX, gyroY, gyroZ) {
       setDeviceStatus(side, true);
       state.lastDataReceived[side] = Date.now();
 
-      // 1. Feed gyroscope angular velocities into the Three.js Cube simulation
-      // Apply scaling so rotations feel incredibly natural and responsive
+      // 1. Feed gyroscope angular velocities
       const factor = 0.005;
       rotationInertia[side].x += gyroX * factor;
       rotationInertia[side].y += gyroY * factor;
       rotationInertia[side].z += gyroZ * factor;
 
-      // 2. Compute gravity vector pitch and roll (tilt) for MIDI CC mapping
-      // Standard pitch / roll calculation using acceleration values
-      let rollAngle = Math.atan2(accY, accZ) * (180 / Math.PI); // Range: -180 to 180
-      let pitchAngle = Math.atan2(-accX, Math.sqrt(accY * accY + accZ * accZ)) * (180 / Math.PI); // Range: -90 to 90
+      // 2. Compute gravity vector pitch and roll (tilt)
+      let rollAngle = Math.atan2(accY, accZ) * (180 / Math.PI);
+      let pitchAngle = Math.atan2(-accX, Math.sqrt(accY * accY + accZ * accZ)) * (180 / Math.PI);
 
-      // Normalize angles to standard MIDI range (0 to 127)
-      // Roll CC map: -90° (0) to +90° (127)
+      // Normalize angles to standard MIDI CC range (0 to 127)
       let rollCC = Math.round(mapRange(rollAngle, -90, 90, 0, 127));
-      // Pitch CC map: -90° (0) to +90° (127)
       let pitchCC = Math.round(mapRange(pitchAngle, -90, 90, 0, 127));
 
-      // Constraint bounds
       rollCC = Math.max(0, Math.min(127, rollCC));
       pitchCC = Math.max(0, Math.min(127, pitchCC));
 
-      // 3. Update UI Slider gauges dynamically
+      // 3. Update UI Slider gauges
       updateSensorUI(side, "roll", rollCC);
       updateSensorUI(side, "pitch", pitchCC);
 
@@ -1264,7 +1392,67 @@
     }
 
     // ==========================================
-    // 5. WEB MIDI API INTEGRATION
+    // 5. DYNAMIC MIDI NOTE CONFIG & LOCALSTORAGE
+    // ==========================================
+    function initMIDINotesMap() {
+      const sides = ['Left', 'Right'];
+      const gestures = ['ATTACK', 'THRUST', 'SHAKE', 'SLASH', 'TWIST', 'U-SHAPE'];
+
+      sides.forEach(side => {
+        gestures.forEach(gesture => {
+          const savedKey = `midi_note_${side}_${gesture}`;
+          const savedValue = localStorage.getItem(savedKey);
+          const input = document.getElementById(`note-${side}-${gesture}`);
+
+          if (savedValue !== null) {
+            CONFIG.midiNoteMap[side][gesture] = Number(savedValue);
+            if (input) input.value = savedValue;
+          } else {
+            // Apply default config
+            const defaultValue = CONFIG.midiNoteMap[side][gesture];
+            if (input) input.value = defaultValue;
+          }
+        });
+      });
+      
+      addLog("System", "MIDI Note mappings successfully loaded from LocalStorage.", "system");
+    }
+
+    function saveNote(side, gesture) {
+      const input = document.getElementById(`note-${side}-${gesture}`);
+      if (!input) return;
+
+      let value = Math.round(Number(input.value));
+
+      // MIDI boundary enforcement
+      if (isNaN(value) || value < 0) value = 0;
+      if (value > 127) value = 127;
+      input.value = value;
+
+      const savedKey = `midi_note_${side}_${gesture}`;
+      localStorage.setItem(savedKey, value);
+      CONFIG.midiNoteMap[side][gesture] = value;
+
+      addLog("System", `Saved: ${side} [${gesture}] ➔ MIDI Note ${value}`, "system");
+    }
+
+    function toggleConfig(side) {
+      const panel = document.getElementById(`config-panel-${side}`);
+      const icon = document.getElementById(`config-icon-${side}`);
+      if (panel) {
+        panel.classList.toggle('expanded');
+        if (icon) {
+          if (panel.classList.contains('expanded')) {
+            icon.className = 'fa-solid fa-chevron-up';
+          } else {
+            icon.className = 'fa-solid fa-chevron-down';
+          }
+        }
+      }
+    }
+
+    // ==========================================
+    // 6. WEB MIDI API INTEGRATION
     // ==========================================
     function initMIDI() {
       if (navigator.requestMIDIAccess) {
@@ -1280,11 +1468,7 @@
     function onMIDISuccess(midiAccess) {
       state.midiAccess = midiAccess;
       addLog("System", "MIDI Access Granted.", "system");
-      
-      // Update device dropdown lists
       updateMIDIPortList();
-
-      // Listen for hardware connections/disconnections
       midiAccess.onstatechange = () => {
         updateMIDIPortList();
       };
@@ -1308,14 +1492,12 @@
 
       let html = '<option value="">-- Select MIDI Target (e.g. LiveTrak L6max) --</option>';
       outputs.forEach((port) => {
-        // Auto-select first device as default if none selected yet
         const selected = (state.midiOutput && state.midiOutput.id === port.id) ? 'selected' : '';
         html += `<option value="${port.id}" ${selected}>${port.name} (${port.manufacturer || 'Generic'})</option>`;
       });
 
       select.innerHTML = html;
 
-      // If no active device is bound, bind the first available output
       if (!state.midiOutput && outputs.size > 0) {
         const firstPort = outputs.values().next().value;
         state.midiOutput = firstPort;
@@ -1339,21 +1521,17 @@
       }
     }
 
-    /**
-     * Send instant Midi Note ON with automatic safety 100ms Note OFF
-     */
     function triggerMIDIGesture(side, gestureName) {
+      // DYNAMIC FETCH: Pulls the live saved note number instead of static config
       const note = CONFIG.midiNoteMap[side][gestureName];
-      if (!note) return; // Unassigned gesture
+      if (note === undefined || note === null) return; 
 
-      // MIDI status byte for Note On, Channel 1: 0x90
-      // MIDI Note On format: [Status, NoteNumber, Velocity]
       const noteOnStatus = 0x90 + (CONFIG.midiChannel - 1);
       const noteOffStatus = 0x80 + (CONFIG.midiChannel - 1);
 
       if (state.midiOutput) {
         try {
-          // 1. Send Note ON
+          // 1. Send Note ON (Velocity 127)
           state.midiOutput.send([noteOnStatus, note, 127]);
           addLog("MIDI", `[Sent] Note ON: ${note} (Vel: 127) [Ch:${CONFIG.midiChannel}]`, "system");
 
@@ -1369,32 +1547,24 @@
           addLog("System", `MIDI Send failed: ${e.message}`, "system");
         }
       } else {
-        // Log to Activity Monitor as warning
-        addLog("MIDI", `[No Device Selected] Note ON Simulated: ${note} (${gestureName})`, "system");
+        addLog("MIDI", `[Simulated] Note ON: ${note} (${gestureName}) [Ch:${CONFIG.midiChannel}]`, "system");
       }
     }
 
-    /**
-     * Stream real-time Pitch/Roll values as Control Change (CC) messages
-     * Implements basic rate limiting to prevent clogging the MIDI bandwidth (15ms standard matches M5 rate)
-     */
     function streamMIDICC(side, rollCC, pitchCC) {
       if (!state.midiOutput) return;
 
       const channel = CONFIG.midiChannel - 1;
-      const ccStatus = 0xB0 + channel; // Control Change on selected channel
+      const ccStatus = 0xB0 + channel;
       
       const rollCCNum = CONFIG.midiCCMap[side].roll;
       const pitchCCNum = CONFIG.midiCCMap[side].pitch;
 
       try {
-        // Send Roll CC if value changed
         if (rollCC !== state.lastCCSent[side].roll) {
           state.midiOutput.send([ccStatus, rollCCNum, rollCC]);
           state.lastCCSent[side].roll = rollCC;
         }
-
-        // Send Pitch CC if value changed
         if (pitchCC !== state.lastCCSent[side].pitch) {
           state.midiOutput.send([ccStatus, pitchCCNum, pitchCC]);
           state.lastCCSent[side].pitch = pitchCC;
@@ -1405,7 +1575,7 @@
     }
 
     // ==========================================
-    // 6. SYNTH AUDIO FEEDBACK (Local sound engine)
+    // 7. SYNTH AUDIO FEEDBACK
     // ==========================================
     let audioContext = null;
 
@@ -1429,10 +1599,8 @@
         osc.connect(gainNode);
         gainNode.connect(audioContext.destination);
 
-        // Different sound style for left vs right
         let baseFreq = side === 'Right' ? 780 : 390;
         
-        // Modify frequency dynamically based on gesture style
         if (gesture === 'ATTACK') {
           osc.type = 'sawtooth';
           baseFreq *= 1.2;
@@ -1441,7 +1609,6 @@
           baseFreq *= 1.0;
         } else if (gesture === 'SHAKE') {
           osc.type = 'sine';
-          // vibrato-like shift
           osc.frequency.setValueAtTime(baseFreq, audioContext.currentTime);
           osc.frequency.linearRampToValueAtTime(baseFreq * 1.5, audioContext.currentTime + 0.1);
         } else {
@@ -1450,7 +1617,6 @@
 
         osc.frequency.setValueAtTime(baseFreq, audioContext.currentTime);
 
-        // Premium Volume Envelope (Fast pluck)
         gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
         gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.18);
 
@@ -1458,12 +1624,12 @@
         osc.stop(audioContext.currentTime + 0.2);
 
       } catch (e) {
-        console.warn("Audio Context block:", e);
+        console.warn("Audio context block:", e);
       }
     }
 
     // ==========================================
-    // 7. REAL-TIME LOGGING
+    // 8. REAL-TIME LOGGING
     // ==========================================
     function addLog(source, message, type) {
       const container = document.getElementById("log-container");
@@ -1485,7 +1651,6 @@
 
       container.insertBefore(li, container.firstChild);
 
-      // Memory leak safety: Keep max 100 log entries
       while (container.children.length > 100) {
         container.removeChild(container.lastChild);
       }
@@ -1498,16 +1663,12 @@
     }
 
     // ==========================================
-    // 8. STANDALONE DEBUG EMULATOR FUNCTIONS
+    // 9. STANDALONE DEBUG EMULATOR FUNCTIONS
     // ==========================================
     function emulateGesture(side, gestureName) {
-      // Simulate direct OSC input receipt
       addLog("Emulator", `Simulating ${side} hand gesture: ${gestureName}`, side.toLowerCase());
       handleGestureDetected(side, gestureName);
     }
-
-    // Emulator intervals for loop telemetry
-    let emulatorIntervals = { Left: null, Right: null };
 
     function emulateSensor(side) {
       setDeviceStatus(side, true);
@@ -1519,43 +1680,34 @@
       document.getElementById(`emul-val-${side}-roll`).textContent = `${rollVal}°`;
       document.getElementById(`emul-val-${side}-pitch`).textContent = `${pitchVal}°`;
 
-      // Convert angles to mock acceleration variables
-      // Simple rotation matrix conversion for acceleration vectors
       const radRoll = rollVal * Math.PI / 180;
       const radPitch = pitchVal * Math.PI / 180;
 
-      // Mock accelerations
       const mockAccX = -Math.sin(radPitch);
       const mockAccY = Math.sin(radRoll) * Math.cos(radPitch);
       const mockAccZ = Math.cos(radRoll) * Math.cos(radPitch);
 
-      // Mock gyro: Quick twitch rotation based on sliders changes
       const mockGyroX = (Math.random() - 0.5) * 0.8;
       const mockGyroY = (Math.random() - 0.5) * 0.8;
       const mockGyroZ = (Math.random() - 0.5) * 0.8;
 
-      // Trigger telemetry flow as if received from websocket
       handleTelemetry(side, mockAccX, mockAccY, mockAccZ, mockGyroX, mockGyroY, mockGyroZ);
     }
 
     // ==========================================
-    // 9. APP INITIALIZATION
+    // 10. APP INITIALIZATION
     // ==========================================
     window.addEventListener('load', () => {
-      // Init Three.js visuals
       initThreeJS("Left");
       initThreeJS("Right");
-
-      // Load WebSocket settings
       initWebSocketIP();
-
-      // Init Web MIDI API
       initMIDI();
+      
+      // Load saved custom MIDI notes from LocalStorage (or apply default values)
+      initMIDINotesMap();
 
-      // Clear layout logs and print welcome banner
       addLog("System", "Dashboard Initialized. Ready to bind M5StickS3 nodes.", "system");
 
-      // Setup click listeners to unlock browser AudioContext immediately on touch
       document.body.addEventListener('click', () => {
         initAudioContext();
       }, { once: false });
