@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>M5StickS3 Gesture & MIDI Dashboard</title>
+  <!-- Google Fonts Outfit & Noto Sans JP -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+  <!-- FontAwesome for Premium Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #090714 0%, #0d091e 50%, #030208 100%);
+      --glass-bg: rgba(255, 255, 255, 0.02);
+      --glass-border: rgba(255, 255, 255, 0.05);
+      --glass-border-active: rgba(255, 255, 255, 0.15);
+      
+      /* Left Side Theme: Neon Cyan Blue */
+      --color-left: #00d2ff;
+      --color-left-glow: rgba(0, 210, 255, 0.4);
+      --color-left-bg: rgba(0, 210, 255, 0.03);
+      
+      /* Right Side Theme: Neon Vivid Red */
+      --color-right: #ff3b3b;
+      --color-right-glow: rgba(255, 59, 59, 0.4);
+      --color-right-bg: rgba(255, 59, 59, 0.03);
+
+      --color-flash: #facc15; /* Vivid Neon Yellow for Gesture Flash */
+      
+      --text-main: #f3f4f6;
+      --text-sub: #9ca3af;
+      --font-family: 'Outfit', 'Noto Sans JP', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding: 1rem 0.5rem 2rem 0.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      z-index: 10;
+      width: 100%;
+      max-width: 600px;
+      padding: 0 0.5rem;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 800;
+      background: linear-gradient(to right, var(--color-left), #a855f7, var(--color-right));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.25rem;
+      letter-spacing: 1px;
+      text-shadow: 0 0 30px rgba(168, 85, 247, 0.25);
+    }
+
+    .subtitle {
+      color: var(--text-sub);
+      font-size: 0.8rem;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    /* Ambient Background Lights */
+    .ambient-light {
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      border-radius: 50%;
+      filter: blur(100px);
+      z-index: 0;
+      opacity: 0.12;
+      pointer-events: none;
+    }
+    .ambient-left {
+      background: var(--color-left);
+      top: 15%;
+      left: -100px;
+    }
+    .ambient-right {
+      background: var(--color-right);
+      bottom: 25%;
+      right: -100px;
+    }
+
+    /* Main Grid for Smartphone */
+    .dashboard-container {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+      z-index: 10;
+    }
+
+    /* Hands Card Base */
+    .hand-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+      transition: border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.1s ease;
+    }
+
+    /* Left Hand Color Overrides */
+    .hand-card.left-hand {
+      border-top: 4px solid var(--color-left);
+      background: var(--color-left-bg);
+    }
+    .hand-card.left-hand.connected {
+      border-color: var(--color-left);
+      box-shadow: 0 0 20px rgba(0, 210, 255, 0.15), 0 15px 35px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Right Hand Color Overrides */
+    .hand-card.right-hand {
+      border-top: 4px solid var(--color-right);
+      background: var(--color-right-bg);
+    }
+    .hand-card.right-hand.connected {
+      border-color: var(--color-right);
+      box-shadow: 0 0 20px rgba(255, 59, 59, 0.15), 0 15px 35px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Gesture Flash State */
+    .hand-card.flash-active {
+      background-color: var(--color-flash) !important;
+      border-color: var(--color-flash) !important;
+      box-shadow: 0 0 40px rgba(250, 204, 21, 0.8) !important;
+    }
+    /* Dynamic text inversion during flash */
+    .hand-card.flash-active * {
+      color: #000000 !important;
+      text-shadow: none !important;
+      border-color: rgba(0, 0, 0, 0.2) !important;
+    }
+
+    /* Header for Hand Cards */
+    .hand-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.8rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 0.5rem;
+    }
+
+    .hand-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .left-hand .hand-title {
+      color: var(--color-left);
+      text-shadow: 0 0 10px var(--color-left-glow);
+    }
+    .right-hand .hand-title {
+      color: var(--color-right);
+      text-shadow: 0 0 10px var(--color-right-glow);
+    }
+
+    /* Status Label */
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 0.2rem 0.6rem;
+      border-radius: 50px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #ef4444;
+      box-shadow: 0 0 6px rgba(239, 68, 68, 0.8);
+      transition: all 0.3s ease;
+    }
+    .connected .status-dot {
+      background: #10b981;
+      box-shadow: 0 0 6px rgba(16, 185, 129, 0.8);
+    }
+
+    /* Visualizer & 3D Area */
+    .visualizer-area {
+      position: relative;
+      height: 160px;
+      width: 100%;
+      border-radius: 16px;
+      overflow: hidden;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      margin-bottom: 0.8rem;
+    }
+    .three-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Gesture Display Box */
+    .gesture-display {
+      text-align: center;
+      padding: 0.8rem;
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      height: 4.2rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      transition: background-color 0.2s;
+    }
+    .gesture-label {
+      font-size: 0.65rem;
+      color: var(--text-sub);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 0.15rem;
+    }
+    .gesture-name {
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      color: rgba(255, 255, 255, 0.15);
+      text-transform: uppercase;
+      transition: all 0.1s ease;
+    }
+    .gesture-name.detected {
+      color: #ffffff;
+      text-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+      transform: scale(1.05);
+    }
+
+    /* Param Slider Monitor inside hand card */
+    .sensor-monitor {
+      margin-top: 0.8rem;
+      background: rgba(0, 0, 0, 0.15);
+      border-radius: 16px;
+      padding: 0.8rem;
+      border: 1px solid rgba(255, 255, 255, 0.02);
+    }
+    .sensor-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0.4rem;
+      font-size: 0.75rem;
+    }
+    .sensor-row:last-child {
+      margin-bottom: 0;
+    }
+    .sensor-title {
+      width: 50px;
+      color: var(--text-sub);
+      font-weight: 600;
+    }
+    .sensor-slider-container {
+      flex: 1;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+      margin: 0 0.5rem;
+    }
+    .sensor-slider-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 4px;
+      transition: width 0.05s linear;
+    }
+    .left-hand .sensor-slider-fill {
+      background: var(--color-left);
+      box-shadow: 0 0 8px var(--color-left-glow);
+    }
+    .right-hand .sensor-slider-fill {
+      background: var(--color-right);
+      box-shadow: 0 0 8px var(--color-right-glow);
+    }
+    .sensor-value {
+      width: 25px;
+      text-align: right;
+      font-family: monospace;
+      font-weight: bold;
+    }
+
+    /* System Control Section (WebSocket & MIDI Selection) */
+    .system-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      padding: 1.2rem;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+    }
+    .system-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #a855f7;
+      margin-bottom: 0.8rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 0.4rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+    }
+    
+    .form-group {
+      margin-bottom: 0.8rem;
+    }
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+    .form-label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--text-sub);
+      margin-bottom: 0.3rem;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .input-row {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .form-input, .form-select {
+      flex: 1;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      color: #ffffff;
+      padding: 0.6rem 0.8rem;
+      font-family: var(--font-family);
+      font-size: 0.85rem;
+      outline: none;
+      transition: all 0.3s;
+    }
+    .form-input:focus, .form-select:focus {
+      border-color: #a855f7;
+      box-shadow: 0 0 10px rgba(168, 85, 247, 0.2);
+    }
+    .form-btn {
+      background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 0 1.2rem;
+      font-family: var(--font-family);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      box-shadow: 0 5px 15px rgba(124, 58, 237, 0.3);
+      transition: all 0.2s;
+    }
+    .form-btn:active {
+      transform: scale(0.95);
+      box-shadow: 0 2px 5px rgba(124, 58, 237, 0.2);
+    }
+    .form-btn.disconnect {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+    }
+
+    /* MIDI CC Settings Switch */
+    .toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.15);
+      padding: 0.6rem 0.8rem;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.02);
+      margin-top: 0.6rem;
+    }
+    .toggle-info {
+      display: flex;
+      flex-direction: column;
+    }
+    .toggle-label-text {
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    .toggle-desc {
+      font-size: 0.65rem;
+      color: var(--text-sub);
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(255, 255, 255, 0.1);
+      transition: .3s;
+      border-radius: 24px;
+      border: 1px solid var(--glass-border);
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #a855f7;
+    }
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+
+    /* Logger Section */
+    .log-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      padding: 1.2rem;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+    }
+    .log-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.6rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 0.4rem;
+    }
+    .log-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-sub);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .clear-btn {
+      background: transparent;
+      border: 1px solid var(--glass-border);
+      color: var(--text-sub);
+      padding: 0.2rem 0.6rem;
+      font-size: 0.65rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: var(--font-family);
+      transition: all 0.2s;
+    }
+    .clear-btn:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: white;
+    }
+    .log-container {
+      height: 120px;
+      overflow-y: auto;
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      font-family: monospace;
+      font-size: 0.75rem;
+      padding-right: 0.2rem;
+    }
+    .log-container::-webkit-scrollbar {
+      width: 4px;
+    }
+    .log-container::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+    }
+    .log-item {
+      display: flex;
+      padding: 0.2rem 0.4rem;
+      background: rgba(0, 0, 0, 0.15);
+      border-radius: 6px;
+      border-left: 3px solid #6b7280;
+    }
+    .log-item.left { border-left-color: var(--color-left); }
+    .log-item.right { border-left-color: var(--color-right); }
+    .log-item.system { border-left-color: #a855f7; }
+    .log-time {
+      color: var(--text-sub);
+      margin-right: 0.4rem;
+    }
+    .log-body {
+      flex: 1;
+    }
+    .log-tag {
+      font-weight: 700;
+      margin-right: 0.3rem;
+    }
+    .log-tag.left { color: var(--color-left); }
+    .log-tag.right { color: var(--color-right); }
+    .log-tag.system { color: #a855f7; }
+    .log-highlight {
+      font-weight: bold;
+      color: var(--color-flash);
+    }
+
+    /* Smartphone Emulator Tool (Crucial for PC-less standalone debugging) */
+    .emulator-card {
+      background: rgba(255, 255, 255, 0.01);
+      border: 1px dashed rgba(255, 255, 255, 0.08);
+      border-radius: 24px;
+      padding: 1.2rem;
+    }
+    .emulator-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #10b981;
+      margin-bottom: 0.6rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .emulator-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.6rem;
+      margin-bottom: 0.8rem;
+    }
+    .emulator-hand-panel {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 16px;
+      padding: 0.6rem;
+      border: 1px solid rgba(255, 255, 255, 0.02);
+    }
+    .emulator-hand-title {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+      text-align: center;
+    }
+    .emulator-hand-panel.left .emulator-hand-title { color: var(--color-left); }
+    .emulator-hand-panel.right .emulator-hand-title { color: var(--color-right); }
+    
+    .emulator-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .emulator-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      color: white;
+      padding: 0.4rem;
+      font-size: 0.7rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: var(--font-family);
+      transition: all 0.2s;
+    }
+    .emulator-btn:active {
+      background: rgba(255, 255, 255, 0.15);
+      transform: scale(0.97);
+    }
+    .emulator-hand-panel.left .emulator-btn:hover { border-color: var(--color-left); }
+    .emulator-hand-panel.right .emulator-btn:hover { border-color: var(--color-right); }
+
+    .emulator-slider-group {
+      margin-top: 0.4rem;
+    }
+    .emulator-slider-label {
+      font-size: 0.6rem;
+      color: var(--text-sub);
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.1rem;
+    }
+    .emulator-slider {
+      width: 100%;
+      -webkit-appearance: none;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      outline: none;
+    }
+    .emulator-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: white;
+      cursor: pointer;
+    }
+    .emulator-hand-panel.left .emulator-slider::-webkit-slider-thumb { background: var(--color-left); }
+    .emulator-hand-panel.right .emulator-slider::-webkit-slider-thumb { background: var(--color-right); }
+
+  </style>
+</head>
+<body>
+
+  <!-- Background Ambience -->
+  <div class="ambient-light ambient-left"></div>
+  <div class="ambient-light ambient-right"></div>
+
+  <!-- Header Section -->
+  <header>
+    <h1>ANTIGRAVITY STICK</h1>
+    <div class="subtitle">M5StickS3 左右独立ジェスチャー＆MIDI統合モニター</div>
+  </header>
+
+  <!-- Dashboard Container -->
+  <div class="dashboard-container">
+    
+    <!-- LEFT HAND CARD -->
+    <div id="card-Left" class="hand-card left-hand">
+      <div class="hand-header">
+        <div class="hand-title">
+          <i class="fa-solid fa-hand-fist"></i> LEFT HAND (左手)
+        </div>
+        <div id="status-Left" class="status-badge">
+          <div class="status-dot"></div>
+          <span id="status-text-Left">Offline</span>
+        </div>
+      </div>
+
+      <!-- Three.js 3D Visualizer -->
+      <div class="visualizer-area">
+        <canvas id="canvas-Left" class="three-canvas"></canvas>
+      </div>
+
+      <!-- Gesture Text Monitor -->
+      <div class="gesture-display">
+        <div class="gesture-label">Detected Gesture</div>
+        <div id="gesture-Left" class="gesture-name">Ready</div>
+      </div>
+
+      <!-- Raw Tilt parameters mapped to MIDI CC Visualizer -->
+      <div class="sensor-monitor">
+        <div class="sensor-row">
+          <span class="sensor-title">Roll CC</span>
+          <div class="sensor-slider-container">
+            <div id="slider-Left-roll" class="sensor-slider-fill" style="width: 50%;"></div>
+          </div>
+          <span id="val-Left-roll" class="sensor-value">64</span>
+        </div>
+        <div class="sensor-row">
+          <span class="sensor-title">Pitch CC</span>
+          <div class="sensor-slider-container">
+            <div id="slider-Left-pitch" class="sensor-slider-fill" style="width: 50%;"></div>
+          </div>
+          <span id="val-Left-pitch" class="sensor-value">64</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT HAND CARD -->
+    <div id="card-Right" class="hand-card right-hand">
+      <div class="hand-header">
+        <div class="hand-title">
+          <i class="fa-solid fa-hand-fist"></i> RIGHT HAND (右手)
+        </div>
+        <div id="status-Right" class="status-badge">
+          <div class="status-dot"></div>
+          <span id="status-text-Right">Offline</span>
+        </div>
+      </div>
+
+      <!-- Three.js 3D Visualizer -->
+      <div class="visualizer-area">
+        <canvas id="canvas-Right" class="three-canvas"></canvas>
+      </div>
+
+      <!-- Gesture Text Monitor -->
+      <div class="gesture-display">
+        <div class="gesture-label">Detected Gesture</div>
+        <div id="gesture-Right" class="gesture-name">Ready</div>
+      </div>
+
+      <!-- Raw Tilt parameters mapped to MIDI CC Visualizer -->
+      <div class="sensor-monitor">
+        <div class="sensor-row">
+          <span class="sensor-title">Roll CC</span>
+          <div class="sensor-slider-container">
+            <div id="slider-Right-roll" class="sensor-slider-fill" style="width: 50%;"></div>
+          </div>
+          <span id="val-Right-roll" class="sensor-value">64</span>
+        </div>
+        <div class="sensor-row">
+          <span class="sensor-title">Pitch CC</span>
+          <div class="sensor-slider-container">
+            <div id="slider-Right-pitch" class="sensor-slider-fill" style="width: 50%;"></div>
+          </div>
+          <span id="val-Right-pitch" class="sensor-value">64</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SYSTEM CONFIGURATION CARD -->
+    <div class="system-card">
+      <div class="system-title">
+        <i class="fa-solid fa-sliders"></i> SYSTEM CONTROLS & MIDI
+      </div>
+      
+      <!-- WebSocket Connection Form -->
+      <div class="form-group">
+        <label class="form-label"><i class="fa-solid fa-network-wired"></i> WebSocket OSC Bridge IP</label>
+        <div class="input-row">
+          <input type="text" id="ws-ip" class="form-input" placeholder="192.168.11.3:8080">
+          <button id="ws-btn" class="form-btn" onclick="toggleWebSocket()">
+            <i class="fa-solid fa-link"></i> Connect
+          </button>
+        </div>
+      </div>
+
+      <!-- MIDI Output Port Selection -->
+      <div class="form-group">
+        <label class="form-label"><i class="fa-solid fa-music"></i> MIDI Output Device</label>
+        <select id="midi-port-select" class="form-select" onchange="onMidiPortChange()">
+          <option value="">Searching for MIDI devices...</option>
+        </select>
+      </div>
+
+      <!-- Live MIDI CC transmission switch -->
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <span class="toggle-label-text"><i class="fa-solid fa-arrow-trend-up"></i> Stream MIDI CC</span>
+          <span class="toggle-desc">Send Roll/Pitch as CC messages in real-time</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="stream-cc-toggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- ACTIVITY REAL-TIME LOGGER -->
+    <div class="log-card">
+      <div class="log-header">
+        <div class="log-title"><i class="fa-solid fa-terminal"></i> Activity Monitor</div>
+        <button class="clear-btn" onclick="clearLogs()">Clear</button>
+      </div>
+      <ul id="log-container" class="log-container">
+        <!-- Logs will be prepended here -->
+      </ul>
+    </div>
+
+    <!-- STANDALONE EMULATOR (Crucial for mobile testing when device is offline) -->
+    <div class="emulator-card">
+      <div class="emulator-title">
+        <i class="fa-solid fa-gamepad"></i> Standalone Debug Emulator
+      </div>
+      <div class="emulator-grid">
+        
+        <!-- Left Hand Emulator -->
+        <div class="emulator-hand-panel left">
+          <div class="emulator-hand-title">Left Emulator</div>
+          <div class="emulator-buttons">
+            <button class="emulator-btn" onclick="emulateGesture('Left', 'ATTACK')">ATTACK</button>
+            <button class="emulator-btn" onclick="emulateGesture('Left', 'SHAKE')">SHAKE</button>
+            <button class="emulator-btn" onclick="emulateGesture('Left', 'U-SHAPE')">U-SHAPE</button>
+          </div>
+          <div class="emulator-slider-group">
+            <div class="emulator-slider-label"><span>Roll</span><span id="emul-val-Left-roll">0°</span></div>
+            <input type="range" class="emulator-slider" min="-90" max="90" value="0" id="emul-slider-Left-roll" oninput="emulateSensor('Left')">
+          </div>
+          <div class="emulator-slider-group">
+            <div class="emulator-slider-label"><span>Pitch</span><span id="emul-val-Left-pitch">0°</span></div>
+            <input type="range" class="emulator-slider" min="-90" max="90" value="0" id="emul-slider-Left-pitch" oninput="emulateSensor('Left')">
+          </div>
+        </div>
+
+        <!-- Right Hand Emulator -->
+        <div class="emulator-hand-panel right">
+          <div class="emulator-hand-title">Right Emulator</div>
+          <div class="emulator-buttons">
+            <button class="emulator-btn" onclick="emulateGesture('Right', 'ATTACK')">ATTACK</button>
+            <button class="emulator-btn" onclick="emulateGesture('Right', 'THRUST')">THRUST</button>
+            <button class="emulator-btn" onclick="emulateGesture('Right', 'SLASH')">SLASH</button>
+          </div>
+          <div class="emulator-slider-group">
+            <div class="emulator-slider-label"><span>Roll</span><span id="emul-val-Right-roll">0°</span></div>
+            <input type="range" class="emulator-slider" min="-90" max="90" value="0" id="emul-slider-Right-roll" oninput="emulateSensor('Right')">
+          </div>
+          <div class="emulator-slider-group">
+            <div class="emulator-slider-label"><span>Pitch</span><span id="emul-val-Right-pitch">0°</span></div>
+            <input type="range" class="emulator-slider" min="-90" max="90" value="0" id="emul-slider-Right-pitch" oninput="emulateSensor('Right')">
+          </div>
+        </div>
+
+      </div>
+      <div style="font-size: 0.6rem; color: var(--text-sub); text-align: center;">
+        <i class="fa-solid fa-info-circle"></i> Use these inputs to test Three.js rotation, flash animation, and MIDI generation without hardware.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CDN scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <script>
+    // ==========================================
+    // 1. STATE & GLOBAL CONFIGURATION
+    // ==========================================
+    const CONFIG = {
+      defaultIP: "192.168.11.3:8080",
+      midiChannel: 1, // Channels 1-16 (mapped internally to 0-15)
+      // Mappings for Gesture -> MIDI Note numbers (Velocity 127)
+      midiNoteMap: {
+        Right: {
+          "ATTACK": 60,  // ド (C4)
+          "THRUST": 62,  // レ (D4)
+          "SHAKE": 65,   // ファ (F4)
+          "SLASH": 67,   // ソ (G4)
+          "TWIST": 69,   // ラ (A4)
+          "U-SHAPE": 71  // シ (B4)
+        },
+        Left: {
+          "ATTACK": 64,  // ミ (E4)
+          "THRUST": 66,  // ファ# (F#4)
+          "SHAKE": 68,   // ソ# (G#4)
+          "SLASH": 70,   // アシッド (A#4)
+          "TWIST": 72,   // ド (C5)
+          "U-SHAPE": 74  // レ (D5)
+        }
+      },
+      // CC mappings
+      midiCCMap: {
+        Left: { roll: 10, pitch: 11 },   // e.g. CC 10 (Pan), CC 11 (Expression)
+        Right: { roll: 74, pitch: 71 }   // e.g. CC 74 (Brightness), CC 71 (Resonance)
+      }
+    };
+
+    const state = {
+      ws: null,
+      isConnected: false,
+      midiAccess: null,
+      midiOutput: null,
+      activeTimers: { Left: null, Right: null },
+      lastCCSent: {
+        Left: { roll: -1, pitch: -1 },
+        Right: { roll: -1, pitch: -1 }
+      },
+      // Track device telemetry timeouts to auto-offline
+      lastDataReceived: { Left: 0, Right: 0 }
+    };
+
+    // ==========================================
+    // 2. THREE.JS 3D CUBE VISUALIZER CREATION
+    // ==========================================
+    const renderers = { Left: null, Right: null };
+    const cubes = { Left: null, Right: null };
+    
+    // Physics tracking for inertia-based rotation
+    const rotationInertia = {
+      Left: { x: 0.01, y: 0.01, z: 0.005 },
+      Right: { x: 0.01, y: 0.01, z: 0.005 }
+    };
+
+    function initThreeJS(side) {
+      const canvas = document.getElementById(`canvas-${side}`);
+      if (!canvas) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const scene = new THREE.Scene();
+      
+      // Cyber aesthetic: Slightly blueish ambient scene fog
+      scene.fog = new THREE.FogExp2(0x090714, 0.015);
+
+      const camera = new THREE.PerspectiveCamera(45, rect.width / rect.height, 0.1, 100);
+      camera.position.z = 7;
+
+      const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+      renderer.setSize(rect.width, rect.height, false);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderers[side] = renderer;
+
+      // Create a gorgeous sci-fi translucent cube
+      const geometry = new THREE.BoxGeometry(2.2, 2.2, 2.2);
+      
+      // Face material (translucent glass)
+      const material = new THREE.MeshBasicMaterial({
+        color: side === 'Left' ? 0x00d2ff : 0xff3b3b,
+        transparent: true,
+        opacity: 0.12,
+        side: THREE.DoubleSide
+      });
+      const cubeMesh = new THREE.Mesh(geometry, material);
+      scene.add(cubeMesh);
+
+      // Wireframe outlines (sharp glowing borders)
+      const edges = new THREE.EdgesGeometry(geometry);
+      const lineMaterial = new THREE.LineBasicMaterial({
+        color: side === 'Left' ? 0x00d2ff : 0xff3b3b,
+        linewidth: 2 // Note: linewidth > 1 usually not supported by WebGL implementations, but good practice
+      });
+      const wireframe = new THREE.LineSegments(edges, lineMaterial);
+      cubeMesh.add(wireframe);
+
+      // Add a smaller inner glowing core cube
+      const coreGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+      const coreMat = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.4
+      });
+      const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+      cubeMesh.add(coreMesh);
+
+      cubes[side] = cubeMesh;
+
+      // Lighting (even basic unlit materials benefit from a subtle directional flare)
+      const light = new THREE.DirectionalLight(0xffffff, 1);
+      light.position.set(5, 5, 5).normalize();
+      scene.add(light);
+
+      // Smooth Animation Loop
+      function animate() {
+        requestAnimationFrame(animate);
+
+        // Apply physical-like friction decay to the gyro rotation impulses
+        cubeMesh.rotation.x += rotationInertia[side].x;
+        cubeMesh.rotation.y += rotationInertia[side].y;
+        cubeMesh.rotation.z += rotationInertia[side].z;
+
+        // Apply friction so cubes slow down gradually when no telemetry arrives
+        rotationInertia[side].x *= 0.95;
+        rotationInertia[side].y *= 0.95;
+        rotationInertia[side].z *= 0.95;
+
+        // Add a gentle idle rotation so the scene feels alive even when offline
+        rotationInertia[side].x += 0.0003;
+        rotationInertia[side].y += 0.0005;
+
+        renderer.render(scene, camera);
+      }
+      
+      animate();
+
+      // Handle window resizing or orientation changes
+      window.addEventListener('resize', () => {
+        const width = canvas.clientWidth;
+        const height = canvas.clientHeight;
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        renderer.setSize(width, height, false);
+      });
+    }
+
+    // ==========================================
+    // 3. WEBSOCKET CONNECTION & OSC PARSING
+    // ==========================================
+    function initWebSocketIP() {
+      const savedIP = localStorage.getItem("antigravity_ws_ip");
+      document.getElementById("ws-ip").value = savedIP || CONFIG.defaultIP;
+    }
+
+    function toggleWebSocket() {
+      if (state.isConnected) {
+        closeWS();
+      } else {
+        connectWS();
+      }
+    }
+
+    function connectWS() {
+      const ipInput = document.getElementById("ws-ip").value.trim();
+      if (!ipInput) return;
+
+      localStorage.setItem("antigravity_ws_ip", ipInput);
+      
+      const wsUrl = `ws://${ipInput}`;
+      addLog("System", `Connecting to bridge server at <span class="log-highlight">${wsUrl}</span>...`, "system");
+      
+      document.getElementById("ws-btn").innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Connecting';
+      document.getElementById("ws-btn").disabled = true;
+
+      try {
+        state.ws = new WebSocket(wsUrl);
+
+        state.ws.onopen = () => {
+          state.isConnected = true;
+          addLog("System", "WebSocket connection successfully established!", "system");
+          updateWSBtn(true);
+        };
+
+        state.ws.onmessage = (event) => {
+          handleWSMessage(event.data);
+        };
+
+        state.ws.onclose = (event) => {
+          addLog("System", `WebSocket connection closed. Code: ${event.code}`, "system");
+          closeWS();
+        };
+
+        state.ws.onerror = (error) => {
+          addLog("System", `WebSocket error occurred. Connection failed.`, "system");
+          closeWS();
+        };
+
+      } catch (err) {
+        addLog("System", `Connection setup failed: ${err.message}`, "system");
+        closeWS();
+      }
+    }
+
+    function closeWS() {
+      if (state.ws) {
+        state.ws.close();
+        state.ws = null;
+      }
+      state.isConnected = false;
+      updateWSBtn(false);
+      
+      // Auto-offline devices
+      setDeviceStatus("Left", false);
+      setDeviceStatus("Right", false);
+    }
+
+    function updateWSBtn(connected) {
+      const btn = document.getElementById("ws-btn");
+      btn.disabled = false;
+      if (connected) {
+        btn.innerHTML = '<i class="fa-solid fa-link-slash"></i> Disconnect';
+        btn.className = "form-btn disconnect";
+      } else {
+        btn.innerHTML = '<i class="fa-solid fa-link"></i> Connect';
+        btn.className = "form-btn";
+      }
+    }
+
+    /**
+     * Handles incoming data payload. Supports both structured JSON OSC
+     * and fallback string parse.
+     */
+    function handleWSMessage(rawData) {
+      try {
+        const parsed = JSON.parse(rawData);
+        
+        // Typical OSC message structure: { address: "/m5/Right/gesture", args: ["ATTACK"] }
+        if (parsed.address && parsed.args) {
+          routeOSCMessage(parsed.address, parsed.args);
+        } else {
+          // Direct JSON fields fallback (e.g. { id: 'Right', action: 'ATTACK' })
+          handleDirectJSONFallback(parsed);
+        }
+      } catch (e) {
+        // Fallback: If not JSON, print to log for transparency
+        addLog("System", `Raw Data Received: ${rawData}`, "system");
+      }
+    }
+
+    function routeOSCMessage(address, args) {
+      // 1. Gesture Address Routing
+      // Expected: /m5/Right/gesture -> ["ATTACK"]
+      if (address.endsWith("/gesture")) {
+        const parts = address.split('/');
+        // parts array: ["", "m5", "Right", "gesture"] or similar
+        const side = parts[2]; // 'Right' or 'Left'
+        const gestureName = args[0];
+        
+        if (side === 'Right' || side === 'Left') {
+          handleGestureDetected(side, gestureName);
+        }
+      }
+      // 2. Sensor Telemetry Routing
+      // Expected: /m5/Right -> [accX, accY, accZ, gyroX, gyroY, gyroZ]
+      else if (address.startsWith("/m5/")) {
+        const parts = address.split('/');
+        const side = parts[2]; // 'Right' or 'Left'
+        
+        if ((side === 'Right' || side === 'Left') && args.length >= 6) {
+          const accX = Number(args[0]);
+          const accY = Number(args[1]);
+          const accZ = Number(args[2]);
+          const gyroX = Number(args[3]);
+          const gyroY = Number(args[4]);
+          const gyroZ = Number(args[5]);
+          
+          handleTelemetry(side, accX, accY, accZ, gyroX, gyroY, gyroZ);
+        }
+      }
+    }
+
+    function handleDirectJSONFallback(data) {
+      // Support for alternative Smart Geta style: { id: "Right", status: "connected" }
+      if (data.id && data.status) {
+        setDeviceStatus(data.id, data.status === "connected");
+      }
+      // { id: "Right", action: "ATTACK" }
+      else if (data.id && data.action) {
+        handleGestureDetected(data.id, data.action);
+      }
+    }
+
+    // Auto-timeout check for device connection state (Offline if no telemetry in 2 seconds)
+    setInterval(() => {
+      const now = Date.now();
+      ["Left", "Right"].forEach(side => {
+        if (state.lastDataReceived[side] > 0 && (now - state.lastDataReceived[side] > 2000)) {
+          setDeviceStatus(side, false);
+        }
+      });
+    }, 1000);
+
+    // ==========================================
+    // 4. ACTION PROCESSORS & ANIMATIONS
+    // ==========================================
+    function setDeviceStatus(side, isOnline) {
+      const badge = document.getElementById(`status-${side}`);
+      const statusText = document.getElementById(`status-text-${side}`);
+      const card = document.getElementById(`card-${side}`);
+      
+      if (isOnline) {
+        badge.classList.add("connected");
+        statusText.textContent = "Online";
+        card.classList.add("connected");
+      } else {
+        badge.classList.remove("connected");
+        statusText.textContent = "Offline";
+        card.classList.remove("connected");
+        state.lastDataReceived[side] = 0; // reset
+      }
+    }
+
+    function handleGestureDetected(side, gestureName) {
+      setDeviceStatus(side, true);
+      state.lastDataReceived[side] = Date.now();
+
+      const card = document.getElementById(`card-${side}`);
+      const textEl = document.getElementById(`gesture-${side}`);
+      
+      // Stop ongoing animation timer for this hand to prevent conflicts
+      if (state.activeTimers[side]) {
+        clearTimeout(state.activeTimers[side]);
+      }
+
+      // 1. Play Premium Synth audio feedback locally
+      playAudioBeep(side, gestureName);
+
+      // 2. Trigger Web MIDI Note output
+      triggerMIDIGesture(side, gestureName);
+
+      // 3. UI Flash Animation Setup
+      // Force DOM Reflow to restart animations
+      card.classList.remove("flash-active");
+      textEl.classList.remove("detected");
+      void card.offsetWidth;
+
+      // Add active CSS classes
+      card.classList.add("flash-active");
+      textEl.classList.add("detected");
+      textEl.textContent = gestureName;
+
+      addLog(side, `Detected Gesture: <span class="log-highlight">${gestureName}</span>`, side.toLowerCase());
+
+      // 4. Cubic Bezier recovery back to baseline after 0.2s (200ms)
+      state.activeTimers[side] = setTimeout(() => {
+        card.classList.remove("flash-active");
+        textEl.classList.remove("detected");
+      }, 200);
+    }
+
+    /**
+     * Real-time sensor routing
+     */
+    function handleTelemetry(side, accX, accY, accZ, gyroX, gyroY, gyroZ) {
+      setDeviceStatus(side, true);
+      state.lastDataReceived[side] = Date.now();
+
+      // 1. Feed gyroscope angular velocities into the Three.js Cube simulation
+      // Apply scaling so rotations feel incredibly natural and responsive
+      const factor = 0.005;
+      rotationInertia[side].x += gyroX * factor;
+      rotationInertia[side].y += gyroY * factor;
+      rotationInertia[side].z += gyroZ * factor;
+
+      // 2. Compute gravity vector pitch and roll (tilt) for MIDI CC mapping
+      // Standard pitch / roll calculation using acceleration values
+      let rollAngle = Math.atan2(accY, accZ) * (180 / Math.PI); // Range: -180 to 180
+      let pitchAngle = Math.atan2(-accX, Math.sqrt(accY * accY + accZ * accZ)) * (180 / Math.PI); // Range: -90 to 90
+
+      // Normalize angles to standard MIDI range (0 to 127)
+      // Roll CC map: -90° (0) to +90° (127)
+      let rollCC = Math.round(mapRange(rollAngle, -90, 90, 0, 127));
+      // Pitch CC map: -90° (0) to +90° (127)
+      let pitchCC = Math.round(mapRange(pitchAngle, -90, 90, 0, 127));
+
+      // Constraint bounds
+      rollCC = Math.max(0, Math.min(127, rollCC));
+      pitchCC = Math.max(0, Math.min(127, pitchCC));
+
+      // 3. Update UI Slider gauges dynamically
+      updateSensorUI(side, "roll", rollCC);
+      updateSensorUI(side, "pitch", pitchCC);
+
+      // 4. Stream MIDI CC output if enabled
+      if (document.getElementById("stream-cc-toggle").checked) {
+        streamMIDICC(side, rollCC, pitchCC);
+      }
+    }
+
+    function updateSensorUI(side, type, value) {
+      const slider = document.getElementById(`slider-${side}-${type}`);
+      const valText = document.getElementById(`val-${side}-${type}`);
+      if (slider && valText) {
+        const percent = (value / 127) * 100;
+        slider.style.width = `${percent}%`;
+        valText.textContent = value;
+      }
+    }
+
+    function mapRange(value, inMin, inMax, outMin, outMax) {
+      return ((value - inMin) * (outMax - outMin)) / (inMax - inMin) + outMin;
+    }
+
+    // ==========================================
+    // 5. WEB MIDI API INTEGRATION
+    // ==========================================
+    function initMIDI() {
+      if (navigator.requestMIDIAccess) {
+        navigator.requestMIDIAccess()
+          .then(onMIDISuccess, onMIDIFailure);
+      } else {
+        addLog("System", "Web MIDI API is not supported in this smartphone browser.", "system");
+        const select = document.getElementById("midi-port-select");
+        select.innerHTML = '<option value="">MIDI Not Supported</option>';
+      }
+    }
+
+    function onMIDISuccess(midiAccess) {
+      state.midiAccess = midiAccess;
+      addLog("System", "MIDI Access Granted.", "system");
+      
+      // Update device dropdown lists
+      updateMIDIPortList();
+
+      // Listen for hardware connections/disconnections
+      midiAccess.onstatechange = () => {
+        updateMIDIPortList();
+      };
+    }
+
+    function onMIDIFailure(msg) {
+      addLog("System", `Failed to initialize MIDI Access: ${msg}`, "system");
+    }
+
+    function updateMIDIPortList() {
+      const select = document.getElementById("midi-port-select");
+      if (!select || !state.midiAccess) return;
+
+      const outputs = state.midiAccess.outputs;
+      
+      if (outputs.size === 0) {
+        select.innerHTML = '<option value="">No MIDI output devices found</option>';
+        state.midiOutput = null;
+        return;
+      }
+
+      let html = '<option value="">-- Select MIDI Target (e.g. LiveTrak L6max) --</option>';
+      outputs.forEach((port) => {
+        // Auto-select first device as default if none selected yet
+        const selected = (state.midiOutput && state.midiOutput.id === port.id) ? 'selected' : '';
+        html += `<option value="${port.id}" ${selected}>${port.name} (${port.manufacturer || 'Generic'})</option>`;
+      });
+
+      select.innerHTML = html;
+
+      // If no active device is bound, bind the first available output
+      if (!state.midiOutput && outputs.size > 0) {
+        const firstPort = outputs.values().next().value;
+        state.midiOutput = firstPort;
+        addLog("System", `Auto-selected MIDI device: <span class="log-highlight">${firstPort.name}</span>`, "system");
+      }
+    }
+
+    function onMidiPortChange() {
+      const select = document.getElementById("midi-port-select");
+      const portId = select.value;
+
+      if (!portId) {
+        state.midiOutput = null;
+        addLog("System", "MIDI Output disabled.", "system");
+        return;
+      }
+
+      state.midiOutput = state.midiAccess.outputs.get(portId);
+      if (state.midiOutput) {
+        addLog("System", `Target MIDI Output set to: <span class="log-highlight">${state.midiOutput.name}</span>`, "system");
+      }
+    }
+
+    /**
+     * Send instant Midi Note ON with automatic safety 100ms Note OFF
+     */
+    function triggerMIDIGesture(side, gestureName) {
+      const note = CONFIG.midiNoteMap[side][gestureName];
+      if (!note) return; // Unassigned gesture
+
+      // MIDI status byte for Note On, Channel 1: 0x90
+      // MIDI Note On format: [Status, NoteNumber, Velocity]
+      const noteOnStatus = 0x90 + (CONFIG.midiChannel - 1);
+      const noteOffStatus = 0x80 + (CONFIG.midiChannel - 1);
+
+      if (state.midiOutput) {
+        try {
+          // 1. Send Note ON
+          state.midiOutput.send([noteOnStatus, note, 127]);
+          addLog("MIDI", `[Sent] Note ON: ${note} (Vel: 127) [Ch:${CONFIG.midiChannel}]`, "system");
+
+          // 2. Safety automatic Note OFF schedule (100ms later)
+          setTimeout(() => {
+            if (state.midiOutput) {
+              state.midiOutput.send([noteOffStatus, note, 0]);
+              addLog("MIDI", `[Sent] Note OFF: ${note} [Ch:${CONFIG.midiChannel}]`, "system");
+            }
+          }, 100);
+
+        } catch (e) {
+          addLog("System", `MIDI Send failed: ${e.message}`, "system");
+        }
+      } else {
+        // Log to Activity Monitor as warning
+        addLog("MIDI", `[No Device Selected] Note ON Simulated: ${note} (${gestureName})`, "system");
+      }
+    }
+
+    /**
+     * Stream real-time Pitch/Roll values as Control Change (CC) messages
+     * Implements basic rate limiting to prevent clogging the MIDI bandwidth (15ms standard matches M5 rate)
+     */
+    function streamMIDICC(side, rollCC, pitchCC) {
+      if (!state.midiOutput) return;
+
+      const channel = CONFIG.midiChannel - 1;
+      const ccStatus = 0xB0 + channel; // Control Change on selected channel
+      
+      const rollCCNum = CONFIG.midiCCMap[side].roll;
+      const pitchCCNum = CONFIG.midiCCMap[side].pitch;
+
+      try {
+        // Send Roll CC if value changed
+        if (rollCC !== state.lastCCSent[side].roll) {
+          state.midiOutput.send([ccStatus, rollCCNum, rollCC]);
+          state.lastCCSent[side].roll = rollCC;
+        }
+
+        // Send Pitch CC if value changed
+        if (pitchCC !== state.lastCCSent[side].pitch) {
+          state.midiOutput.send([ccStatus, pitchCCNum, pitchCC]);
+          state.lastCCSent[side].pitch = pitchCC;
+        }
+      } catch (err) {
+        console.error("MIDI CC stream failed:", err);
+      }
+    }
+
+    // ==========================================
+    // 6. SYNTH AUDIO FEEDBACK (Local sound engine)
+    // ==========================================
+    let audioContext = null;
+
+    function initAudioContext() {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+    }
+
+    function playAudioBeep(side, gesture) {
+      try {
+        initAudioContext();
+        if (!audioContext) return;
+
+        const osc = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        osc.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        // Different sound style for left vs right
+        let baseFreq = side === 'Right' ? 780 : 390;
+        
+        // Modify frequency dynamically based on gesture style
+        if (gesture === 'ATTACK') {
+          osc.type = 'sawtooth';
+          baseFreq *= 1.2;
+        } else if (gesture === 'THRUST') {
+          osc.type = 'triangle';
+          baseFreq *= 1.0;
+        } else if (gesture === 'SHAKE') {
+          osc.type = 'sine';
+          // vibrato-like shift
+          osc.frequency.setValueAtTime(baseFreq, audioContext.currentTime);
+          osc.frequency.linearRampToValueAtTime(baseFreq * 1.5, audioContext.currentTime + 0.1);
+        } else {
+          osc.type = 'sine';
+        }
+
+        osc.frequency.setValueAtTime(baseFreq, audioContext.currentTime);
+
+        // Premium Volume Envelope (Fast pluck)
+        gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.18);
+
+        osc.start();
+        osc.stop(audioContext.currentTime + 0.2);
+
+      } catch (e) {
+        console.warn("Audio Context block:", e);
+      }
+    }
+
+    // ==========================================
+    // 7. REAL-TIME LOGGING
+    // ==========================================
+    function addLog(source, message, type) {
+      const container = document.getElementById("log-container");
+      if (!container) return;
+
+      const li = document.createElement("li");
+      li.className = `log-item ${type}`;
+
+      const now = new Date();
+      const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}.${now.getMilliseconds().toString().padStart(3, '0')}`;
+
+      li.innerHTML = `
+        <span class="log-time">[${timeStr}]</span>
+        <span class="log-body">
+          <span class="log-tag ${type}">${source.toUpperCase()}</span>
+          ${message}
+        </span>
+      `;
+
+      container.insertBefore(li, container.firstChild);
+
+      // Memory leak safety: Keep max 100 log entries
+      while (container.children.length > 100) {
+        container.removeChild(container.lastChild);
+      }
+    }
+
+    function clearLogs() {
+      const container = document.getElementById("log-container");
+      if (container) container.innerHTML = '';
+      addLog("System", "Activity logs cleared.", "system");
+    }
+
+    // ==========================================
+    // 8. STANDALONE DEBUG EMULATOR FUNCTIONS
+    // ==========================================
+    function emulateGesture(side, gestureName) {
+      // Simulate direct OSC input receipt
+      addLog("Emulator", `Simulating ${side} hand gesture: ${gestureName}`, side.toLowerCase());
+      handleGestureDetected(side, gestureName);
+    }
+
+    // Emulator intervals for loop telemetry
+    let emulatorIntervals = { Left: null, Right: null };
+
+    function emulateSensor(side) {
+      setDeviceStatus(side, true);
+      state.lastDataReceived[side] = Date.now();
+
+      const rollVal = Number(document.getElementById(`emul-slider-${side}-roll`).value);
+      const pitchVal = Number(document.getElementById(`emul-slider-${side}-pitch`).value);
+      
+      document.getElementById(`emul-val-${side}-roll`).textContent = `${rollVal}°`;
+      document.getElementById(`emul-val-${side}-pitch`).textContent = `${pitchVal}°`;
+
+      // Convert angles to mock acceleration variables
+      // Simple rotation matrix conversion for acceleration vectors
+      const radRoll = rollVal * Math.PI / 180;
+      const radPitch = pitchVal * Math.PI / 180;
+
+      // Mock accelerations
+      const mockAccX = -Math.sin(radPitch);
+      const mockAccY = Math.sin(radRoll) * Math.cos(radPitch);
+      const mockAccZ = Math.cos(radRoll) * Math.cos(radPitch);
+
+      // Mock gyro: Quick twitch rotation based on sliders changes
+      const mockGyroX = (Math.random() - 0.5) * 0.8;
+      const mockGyroY = (Math.random() - 0.5) * 0.8;
+      const mockGyroZ = (Math.random() - 0.5) * 0.8;
+
+      // Trigger telemetry flow as if received from websocket
+      handleTelemetry(side, mockAccX, mockAccY, mockAccZ, mockGyroX, mockGyroY, mockGyroZ);
+    }
+
+    // ==========================================
+    // 9. APP INITIALIZATION
+    // ==========================================
+    window.addEventListener('load', () => {
+      // Init Three.js visuals
+      initThreeJS("Left");
+      initThreeJS("Right");
+
+      // Load WebSocket settings
+      initWebSocketIP();
+
+      // Init Web MIDI API
+      initMIDI();
+
+      // Clear layout logs and print welcome banner
+      addLog("System", "Dashboard Initialized. Ready to bind M5StickS3 nodes.", "system");
+
+      // Setup click listeners to unlock browser AudioContext immediately on touch
+      document.body.addEventListener('click', () => {
+        initAudioContext();
+      }, { once: false });
+    });
+  </script>
+</body>
+</html>
