@@ -1350,11 +1350,13 @@
       setDeviceStatus(side, true);
       state.lastDataReceived[side] = Date.now();
 
-      // 1. Feed gyroscope angular velocities
-      const factor = 0.005;
-      rotationInertia[side].x += gyroX * factor;
-      rotationInertia[side].y += gyroY * factor;
-      rotationInertia[side].z += gyroZ * factor;
+      // 1. Feed gyroscope angular velocities (with deadband noise-filter and scaled factor)
+      const deadband = 8.0; // Ignore tiny IMU drift noise (degrees per second)
+      const factor = 0.00015; // Scaled down significantly to prevent hyper-rotation
+      
+      if (Math.abs(gyroX) > deadband) rotationInertia[side].x += gyroX * factor;
+      if (Math.abs(gyroY) > deadband) rotationInertia[side].y += gyroY * factor;
+      if (Math.abs(gyroZ) > deadband) rotationInertia[side].z += gyroZ * factor;
 
       // 2. Compute gravity vector pitch and roll (tilt)
       let rollAngle = Math.atan2(accY, accZ) * (180 / Math.PI);
