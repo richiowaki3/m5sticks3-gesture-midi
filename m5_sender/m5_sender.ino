@@ -176,6 +176,39 @@ void loop() {
     flashScreenFeedback("THRUST", CYAN);
   }
   
+  // -------------------------------------------------------------
+  // C. M5StickS3内蔵の高速ジェスチャー判定 (超低遅延トリガー)
+  // -------------------------------------------------------------
+  static unsigned long lastGestureTime = 0;
+  if (now - lastGestureTime > 350) { // 350msのチャタリング防止クールダウン
+    float accX = 0, accY = 0, accZ = 0;
+    float gyroX = 0, gyroY = 0, gyroZ = 0;
+    M5.Imu.getAccel(&accX, &accY, &accZ);
+    M5.Imu.getGyro(&gyroX, &gyroY, &gyroZ);
+
+    float totalAcc = sqrt(accX * accX + accY * accY + accZ * accZ);
+    float totalGyro = sqrt(gyroX * gyroX + gyroY * gyroY + gyroZ * gyroZ);
+
+    // A. 強いアタック (瞬間的な3.0G以上の全方向衝撃)
+    if (totalAcc > 3.0f) {
+      lastGestureTime = now;
+      sendOSCGesture("ATTACK");
+      flashScreenFeedback("ATTACK", YELLOW);
+    }
+    // B. 前方への突き (瞬間的な2.0G以上の水平衝撃)
+    else if (abs(accY) > 2.0f || abs(accX) > 2.0f) {
+      lastGestureTime = now;
+      sendOSCGesture("THRUST");
+      flashScreenFeedback("THRUST", CYAN);
+    }
+    // C. 激しいひねり/シェイク (高速な回転)
+    else if (totalGyro > 350.0f) {
+      lastGestureTime = now;
+      sendOSCGesture("SHAKE");
+      flashScreenFeedback("SHAKE", GREEN);
+    }
+  }
+
   // 画面の復帰処理
   checkScreenRestore(now);
 
