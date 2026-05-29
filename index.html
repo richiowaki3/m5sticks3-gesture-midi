@@ -1050,7 +1050,9 @@
         Right: { roll: -1, pitch: -1 }
       },
       // Track device telemetry timeouts to auto-offline
-      lastDataReceived: { Left: 0, Right: 0 }
+      lastDataReceived: { Left: 0, Right: 0 },
+      // Cool-down timers for physical gesture detection
+      lastGestureTime: { Left: 0, Right: 0 }
     };
 
     // ==========================================
@@ -1376,6 +1378,32 @@
       // 4. Stream MIDI CC output if enabled
       if (document.getElementById("stream-cc-toggle").checked) {
         streamMIDICC(side, rollCC, pitchCC);
+      }
+
+      // 5. Real-time Gesture Detection Algorithm
+      const now = Date.now();
+      if (now - (state.lastGestureTime[side] || 0) > 350) { // 350ms cool-down
+        // Compute total acceleration force vector (G-force)
+        const totalAcc = Math.sqrt(accX * accX + accY * accY + accZ * accZ);
+        // Compute total gyroscope angular velocity
+        const totalGyro = Math.sqrt(gyroX * gyroX + gyroY * gyroY + gyroZ * gyroZ);
+        
+        // A. Sudden downward/vertical force (ATTACK)
+        // Static acceleration is 1G, so > 3.0G means a very sharp whip/shake motion
+        if (totalAcc > 3.0) {
+          state.lastGestureTime[side] = now;
+          handleGestureDetected(side, "ATTACK");
+        }
+        // B. Sharp horizontal/thrust movement (THRUST)
+        else if (Math.abs(accY) > 2.0 || Math.abs(accX) > 2.0) {
+          state.lastGestureTime[side] = now;
+          handleGestureDetected(side, "THRUST");
+        }
+        // C. Fast circular or twisting movement (SHAKE)
+        else if (totalGyro > 350) {
+          state.lastGestureTime[side] = now;
+          handleGestureDetected(side, "SHAKE");
+        }
       }
     }
 
